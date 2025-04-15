@@ -75,29 +75,29 @@ async function processVideo(inputPath, outputPath, isMobile) {
     return new Promise((resolve, reject) => {
       ffmpeg(inputPath)
         .input(framePath)
-        .complexFilter([
-          {
-            filter: 'scale',
-            options: {
-              w: dimensions.width,
-              h: dimensions.height,
-              force_original_aspect_ratio: 'disable'
-            },
-            inputs: '1:v',
-            outputs: 'scaled_frame'
-          },
-          // {
-          //   filter: 'overlay',
-          //   options: {
-          //     x: 0,
-          //     y: 0,
-          //     format: 'rgb',
-          //     shortest: 0 // Don't end when shortest input ends
-          //   },
-          //   inputs: ['0:v', 'scaled_frame'],
-          //   outputs: 'framed_video'
-          // }
-        ])
+        // .complexFilter([
+        //   {
+        //     filter: 'scale',
+        //     options: {
+        //       w: dimensions.width,
+        //       h: dimensions.height,
+        //       force_original_aspect_ratio: 'disable'
+        //     },
+        //     inputs: '1:v',
+        //     outputs: 'scaled_frame'
+        //   },
+        //   {
+        //     filter: 'overlay',
+        //     options: {
+        //       x: 0,
+        //       y: 0,
+        //       format: 'rgb',
+        //       shortest: 0 // Don't end when shortest input ends
+        //     },
+        //     inputs: ['0:v', 'scaled_frame'],
+        //     outputs: 'framed_video'
+        //   }
+        // ])
         .outputOptions([
           // '-map [framed_video]',
           '-map 0:a',
