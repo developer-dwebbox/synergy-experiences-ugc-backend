@@ -125,7 +125,7 @@ async function processVideo(inputPath, outputPath, audioPath, isMobile) {
 }
 
 // Route to handle video blob upload
-router.post('/upload-blob', upload.single('video'), async (req, res) => {
+router.post('/upload-blob', upload.single('newVideo'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No video file provided' });
