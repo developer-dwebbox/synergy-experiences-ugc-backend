@@ -54,9 +54,7 @@ async function processVideo(inputPath, outputPath, audioPath) {
             filter: 'amix',
             options: {
               inputs: 2,
-              duration: 'longest',
-              dropout_transition: 0,
-              normalize: 0
+              duration: 'longest'
             },
             inputs: ['0:a', '1:a'],
             outputs: 'mixed_audio'
