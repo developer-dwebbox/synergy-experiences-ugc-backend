@@ -129,6 +129,7 @@ async function processVideo(inputPath, outputPath, audioPath, isDesktop) {
 
       const command = ffmpeg(inputPath)
         .input(framePath)
+        .inputOptions(['-stream_loop -1']) // Loop the frame image
         .input(audioPath);
 
       command
@@ -148,7 +149,8 @@ async function processVideo(inputPath, outputPath, audioPath, isDesktop) {
             options: {
               x: 0,
               y: 0,
-              format: 'rgb'
+              format: 'rgb',
+              eval: 'init' // Initialize overlay filter
             },
             inputs: ['0:v', 'scaled_frame'],
             outputs: 'framed_video'
@@ -157,7 +159,6 @@ async function processVideo(inputPath, outputPath, audioPath, isDesktop) {
         .outputOptions([
           '-map [framed_video]',
           '-map 2:a',
-          '-shortest',
           '-af', `volume=0.5`,
           '-pix_fmt yuv420p',
           '-preset slow',
