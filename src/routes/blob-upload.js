@@ -140,7 +140,7 @@ router.post('/upload-blob', upload.fields([
     const outputPath = path.join('uploads', `processed-${uniqueSuffix}.mp4`);
 
     // Write the buffer to a file
-    const videoFile = req.files.video?.[0] || req.files.newVideo?.[0];
+    const videoFile =  req.files.newVideo?.[0];
     fs.writeFileSync(inputPath, videoFile.buffer);
 
     const isMobile = req.body.isMobile === 'true' || req.body.isMobile === true;
@@ -151,7 +151,7 @@ router.post('/upload-blob', upload.fields([
       filename: `input-${uniqueSuffix}.mp4`,
       isMobile,
       audioId,
-      fileType: req.files.video ? 'video' : 'newVideo'
+      fileType: req.files.video && false ? 'video' : 'newVideo'
     });
 
     if (audioId === '1') {
