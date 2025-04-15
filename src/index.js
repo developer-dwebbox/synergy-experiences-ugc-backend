@@ -57,8 +57,8 @@ app.get('/', (req, res) => {
   res.json({ message: 'Welcome to Asian Paints UGGC API' });
 });
 
-// Function to get video dimensions
-function getVideoDimensions(inputPath) {
+// Function to get video dimensions and rotation
+function getVideoInfo(inputPath) {
   return new Promise((resolve, reject) => {
     ffmpeg.ffprobe(inputPath, (err, metadata) => {
       if (err) {
@@ -71,13 +71,31 @@ function getVideoDimensions(inputPath) {
         reject(new Error('No video stream found'));
         return;
       }
-      console.log('Video dimensions:', {
-        width: videoStream.width,
-        height: videoStream.height
+
+      // Get rotation from metadata
+      const rotation = videoStream.tags && videoStream.tags.rotate ? parseInt(videoStream.tags.rotate) : 0;
+      
+      // Get dimensions
+      let width = videoStream.width;
+      let height = videoStream.height;
+
+      // Swap dimensions if video is rotated 90 or 270 degrees
+      if (rotation === 90 || rotation === 270) {
+        [width, height] = [height, width];
+      }
+
+      console.log('Video info:', {
+        originalWidth: videoStream.width,
+        originalHeight: videoStream.height,
+        rotation,
+        finalWidth: width,
+        finalHeight: height
       });
+
       resolve({
-        width: videoStream.width,
-        height: videoStream.height
+        width,
+        height,
+        rotation
       });
     });
   });
@@ -105,29 +123,31 @@ function getVideoDuration(inputPath) {
 // Function to process video with frame overlay and background music
 async function processVideo(inputPath, outputPath, audioPath, isMobile) {
   try {
-    const dimensions = await getVideoDimensions(inputPath);
+    const videoInfo = await getVideoInfo(inputPath);
     const duration = await getVideoDuration(inputPath);
     
     // Select frame based on device type
     const framePath = isMobile ? 'assets/images/frame-mobile.png' : 'assets/images/frame-desktop.png';
     console.log('Using frame:', framePath);
-    const width = dimensions.width;
-    const height = dimensions.height;
-
-    const newWidth  = width > height ? height : width;
     
-    const newHeight = width > height ? width : height;
     return new Promise((resolve, reject) => {
-      ffmpeg(inputPath)
+      const command = ffmpeg(inputPath)
         .input(framePath)
-        .input(audioPath)
+        .input(audioPath);
+
+      // Add rotation if needed
+      if (videoInfo.rotation) {
+        command.videoFilters(`rotate=${videoInfo.rotation}*PI/180`);
+      }
+
+      command
         .complexFilter([
           {
             filter: 'scale',
             options: {
-              w: width,
-              h: height,
-              force_original_aspect_ratio: 'enable'
+              w: videoInfo.width,
+              h: videoInfo.height,
+              force_original_aspect_ratio: 'decrease'
             },
             inputs: '1:v',
             outputs: 'scaled_frame'
@@ -148,7 +168,8 @@ async function processVideo(inputPath, outputPath, audioPath, isMobile) {
           '-map 2:a',
           '-shortest',
           '-af', `volume=0.5`,
-          '-pix_fmt yuv420p'
+          '-pix_fmt yuv420p',
+          '-preset ultrafast' // Faster encoding
         ])
         .audioCodec('aac')
         .videoCodec('libx264')
