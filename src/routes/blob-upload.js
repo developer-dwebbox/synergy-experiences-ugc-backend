@@ -75,10 +75,10 @@ async function processVideo(inputPath, outputPath, isMobile) {
     return new Promise((resolve, reject) => {
       ffmpeg(inputPath)
         .input(framePath)
-        .inputOptions([
-          '-framerate 30',
-          '-loop 1' // Loop the frame image indefinitely
-        ])
+        // .inputOptions([
+        //   '-framerate 30',
+        //   '-loop 1' // Loop the frame image indefinitely
+        // ])
         .complexFilter([
           {
             filter: 'scale',
