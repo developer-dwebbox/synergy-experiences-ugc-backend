@@ -119,13 +119,15 @@ function getVideoDuration(inputPath) {
 }
 
 // Function to process video with frame overlay and background music
+// Function to process video with frame overlay and background music
 async function processVideo(inputPath, outputPath, audioPath, isDesktop) {
   try {
     const videoInfo = await getVideoInfo(inputPath);
     const duration = await getVideoDuration(inputPath);
     
     // Select frame based on device type
-    const framePath = isDesktop ? 'assets/images/frame-mobile.png' : 'assets/images/frame-desktop.png';
+    // Fixed the condition: if isDesktop is true, use frame-desktop.png, else use frame-mobile.png
+    const framePath = isDesktop ? 'assets/images/frame-desktop.png' : 'assets/images/frame-mobile.png';
     console.log('Using frame:', framePath);
     
     return new Promise((resolve, reject) => {
@@ -151,14 +153,27 @@ async function processVideo(inputPath, outputPath, audioPath, isDesktop) {
             outputs: 'scaled_frame'
           },
           {
+            filter: 'setpts',
+            options: 'PTS-STARTPTS',
+            inputs: '0:v',
+            outputs: 'main_video'
+          },
+          {
+            filter: 'setpts',
+            options: 'PTS-STARTPTS',
+            inputs: 'scaled_frame',
+            outputs: 'frame_video'
+          },
+          {
             filter: 'overlay',
             options: {
               x: 0,
               y: 0,
-              format: 'rgb',
-              eval: 'init' // Initialize overlay filter
+              shortest: 1,
+              eof_action: 'repeat',
+              enable: 'between(t,0,999999)' // Apply overlay for the entire duration
             },
-            inputs: ['0:v', 'scaled_frame'],
+            inputs: ['main_video', 'frame_video'],
             outputs: 'framed_video'
           }
         ])
