@@ -75,6 +75,9 @@ async function processVideo(inputPath, outputPath, isMobile) {
     return new Promise((resolve, reject) => {
       ffmpeg(inputPath)
         .input(framePath)
+        .inputOptions([
+          '-stream_loop -1' // Loop the frame image indefinitely
+        ])
         .complexFilter([
           {
             filter: 'scale',
@@ -91,7 +94,8 @@ async function processVideo(inputPath, outputPath, isMobile) {
             options: {
               x: 0,
               y: 0,
-              format: 'rgb'
+              format: 'rgb',
+              shortest: 0 // Don't end when shortest input ends
             },
             inputs: ['0:v', 'scaled_frame'],
             outputs: 'framed_video'
@@ -99,11 +103,11 @@ async function processVideo(inputPath, outputPath, isMobile) {
         ])
         .outputOptions([
           '-map [framed_video]',
-          '-map 0:a', // Preserve original audio
+          '-map 0:a',
           '-pix_fmt yuv420p'
         ])
         .videoCodec('libx264')
-        .audioCodec('copy') // Copy original audio without re-encoding
+        .audioCodec('copy')
         .on('end', () => {
           console.log('Video processing finished');
           resolve();
