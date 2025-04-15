@@ -148,7 +148,8 @@ async function processVideo(inputPath, outputPath, audioPath, isDesktop) {
             options: {
               x: 0,
               y: 0,
-              format: 'rgb'
+              format: 'rgb',
+              enable: 'between(t,0,22)'
             },
             inputs: ['0:v', 'scaled_frame'],
             outputs: 'framed_video'
@@ -157,7 +158,6 @@ async function processVideo(inputPath, outputPath, audioPath, isDesktop) {
         .outputOptions([
           '-map [framed_video]',
           '-map 2:a',
-          // '-shortest',
           '-af', `volume=0.5`,
           '-pix_fmt yuv420p',
           '-preset slow',
@@ -197,7 +197,7 @@ async function processVideo(inputPath, outputPath, audioPath, isDesktop) {
           }
         })
         .on('stderr', (stderrLine) => {
-          console.log('FFmpeg stderr:', stderrLine);
+          // console.log('FFmpeg stderr:', stderrLine);
         })
         .on('error', (err) => {
           errorOccurred = true;
