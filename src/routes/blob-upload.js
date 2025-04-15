@@ -132,47 +132,26 @@ router.post('/upload-blob', upload.single('video'), async (req, res) => {
     // Create a unique filename
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
     const inputPath = path.join('uploads', `input-${uniqueSuffix}.mp4`);
-    const outputPath = path.join('uploads', `processed-${uniqueSuffix}.mp4`);
 
     // Write the buffer to a file
     fs.writeFileSync(inputPath, req.file.buffer);
 
-    const isMobile = req.body.isMobile === 'true' || req.body.isMobile === true;
-    const audioId = req.body.audioId;
-    let audioPath = 'assets/audio/jingle-dummy.wav'; // Default audio
-
     console.log('Received request:', {
-      filename: `input-${uniqueSuffix}.mp4`,
-      isMobile,
-      audioId
+      filename: `input-${uniqueSuffix}.mp4`
     });
-
-    if (audioId === '1') {
-      audioPath = 'assets/audio/jingle-dummy.wav';
-    } else if (audioId === '2') {
-      audioPath = 'assets/audio/jingle-dummy.wav';
-    } else if (audioId === '3') {
-      audioPath = 'assets/audio/jingle-dummy.wav';
-    }
-
-    // Process the video
-    await processVideo(inputPath, outputPath, audioPath, isMobile);
-
-    // Delete the original uploaded file
-    fs.unlinkSync(inputPath);
 
     // Set appropriate headers for video file
     res.setHeader('Content-Type', 'video/mp4');
-    res.setHeader('Content-Disposition', `attachment; filename=${path.basename(outputPath)}`);
+    res.setHeader('Content-Disposition', `attachment; filename=${path.basename(inputPath)}`);
 
-    // Send the processed video file
-    res.sendFile(path.resolve(outputPath), (err) => {
+    // Send the input video file
+    res.sendFile(path.resolve(inputPath), (err) => {
       if (err) {
         console.error('Error sending file:', err);
-        res.status(500).json({ error: 'Error sending processed video' });
+        res.status(500).json({ error: 'Error sending video' });
       } else {
-        // Delete the processed file after sending
-        fs.unlinkSync(outputPath);
+        // Delete the file after sending
+        fs.unlinkSync(inputPath);
       }
     });
   } catch (error) {
