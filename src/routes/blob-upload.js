@@ -76,7 +76,7 @@ async function processVideo(inputPath, outputPath, audioPath, isMobile) {
     return new Promise((resolve, reject) => {
       ffmpeg(inputPath)
         .input(framePath)
-        .input(audioPath)
+        // .input(audioPath) // Commented out audio input
         .complexFilter([
           {
             filter: 'scale',
@@ -101,11 +101,10 @@ async function processVideo(inputPath, outputPath, audioPath, isMobile) {
         ])
         .outputOptions([
           '-map [framed_video]',
-          '-map 2:a',
-          '-af', `volume=0.5`,
+          // '-map 2:a', // Commented out audio mapping
+          // '-af', `volume=0.5`, // Commented out audio filter
           '-pix_fmt yuv420p'
         ])
-        .audioCodec('aac')
         .videoCodec('libx264')
         .on('end', () => {
           console.log('Video processing finished');
