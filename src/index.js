@@ -155,7 +155,7 @@ async function processVideo(inputPath, outputPath, audioPath, isDesktop) {
             options: {
               w: videoInfo.width,
               h: videoInfo.height,
-              force_original_aspect_ratio: 'decrease'
+              force_original_aspect_ratio: 'disable'
             },
             inputs: '1:v',
             outputs: 'scaled_frame'
@@ -177,10 +177,22 @@ async function processVideo(inputPath, outputPath, audioPath, isDesktop) {
           '-shortest',
           '-af', `volume=0.5`,
           '-pix_fmt yuv420p',
-          '-preset ultrafast' // Faster encoding
+          '-preset slow',
+          '-crf 23', // Quality setting (lower is better quality)
+          '-movflags +faststart', // Enable fast start for web playback
+          '-profile:v high', // Use high profile for better compatibility
+          '-level 4.0', // Set H.264 level
+          '-max_muxing_queue_size 1024', // Increase muxing queue size
+          '-vsync 1' // Use constant frame rate
         ])
         .audioCodec('aac')
         .videoCodec('libx264')
+        .on('start', (commandLine) => {
+          console.log('Started FFmpeg with command:', commandLine);
+        })
+        .on('progress', (progress) => {
+          console.log('Processing:', `${Math.round(progress.percent)}% done`);
+        })
         .on('end', () => {
           // Get output file size
           const outputFileSize = fs.statSync(outputPath).size;
