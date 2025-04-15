@@ -84,18 +84,26 @@ function getVideoInfo(inputPath) {
         [width, height] = [height, width];
       }
 
-      console.log('Video info:', {
+      // Get file size
+      const fileSize = metadata.format.size;
+      const fileSizeMB = (fileSize / (1024 * 1024)).toFixed(2);
+
+      console.log('Input Video Info:', {
         originalWidth: videoStream.width,
         originalHeight: videoStream.height,
         rotation,
         finalWidth: width,
-        finalHeight: height
+        finalHeight: height,
+        fileSize: `${fileSizeMB} MB`,
+        duration: metadata.format.duration
       });
 
       resolve({
         width,
         height,
-        rotation
+        rotation,
+        fileSize,
+        duration: metadata.format.duration
       });
     });
   });
@@ -121,13 +129,13 @@ function getVideoDuration(inputPath) {
 }
 
 // Function to process video with frame overlay and background music
-async function processVideo(inputPath, outputPath, audioPath, isMobile) {
+async function processVideo(inputPath, outputPath, audioPath, isDesktop) {
   try {
     const videoInfo = await getVideoInfo(inputPath);
     const duration = await getVideoDuration(inputPath);
     
     // Select frame based on device type
-    const framePath = isMobile ? 'assets/images/frame-mobile.png' : 'assets/images/frame-desktop.png';
+    const framePath = isDesktop ? 'assets/images/frame-mobile.png' : 'assets/images/frame-desktop.png';
     console.log('Using frame:', framePath);
     
     return new Promise((resolve, reject) => {
@@ -174,6 +182,18 @@ async function processVideo(inputPath, outputPath, audioPath, isMobile) {
         .audioCodec('aac')
         .videoCodec('libx264')
         .on('end', () => {
+          // Get output file size
+          const outputFileSize = fs.statSync(outputPath).size;
+          const outputFileSizeMB = (outputFileSize / (1024 * 1024)).toFixed(2);
+          
+          console.log('Output Video Info:', {
+            width: videoInfo.width,
+            height: videoInfo.height,
+            fileSize: `${outputFileSizeMB} MB`,
+            duration: videoInfo.duration,
+            compressionRatio: `${((outputFileSize / videoInfo.fileSize) * 100).toFixed(2)}%`
+          });
+          
           console.log('Video processing finished');
           resolve();
         })
@@ -198,13 +218,13 @@ app.post('/upload', upload.single('video'), async (req, res) => {
 
     const inputPath = req.file.path;
     const outputPath = path.join('uploads', `processed-${req.file.filename}`);
-    const isMobile = req.body.isMobile === 'true' || req.body.isMobile === true;
+    const isDesktop = false;
     const audioId = req.body.audioId;
     let audioPath = 'assets/audio/jingle-dummy.wav'; // Default audio
 
     console.log('Received request:', {
       filename: req.file.filename,
-      isMobile,
+      isDesktop,
       audioId
     });
 
@@ -217,7 +237,7 @@ app.post('/upload', upload.single('video'), async (req, res) => {
     }
 
     // Process the video
-    await processVideo(inputPath, outputPath, audioPath, isMobile);
+    await processVideo(inputPath, outputPath, audioPath, isDesktop);
 
     // Delete the original uploaded file
     fs.unlinkSync(inputPath);
