@@ -1,66 +1,21 @@
 const express = require('express');
-const multer = require('multer');
+const router = express.Router();
 const path = require('path');
+const fs = require('fs');
 const ffmpeg = require('fluent-ffmpeg');
 const ffmpegPath = require('@ffmpeg-installer/ffmpeg').path;
 const ffprobePath = require('@ffprobe-installer/ffprobe').path;
-const cors = require('cors');
+const multer = require('multer');
 ffmpeg.setFfmpegPath(ffmpegPath);
 ffmpeg.setFfprobePath(ffprobePath);
-const fs = require('fs');
-const app = express();
-const PORT = process.env.PORT || 5000;
 
-// Import routes
-const blobUploadRouter = require('./routes/blob-upload');
-
-// CORS configuration
-const corsOptions = {
-  origin: '*',
-  methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  exposedHeaders: ['Content-Disposition'],
-  maxAge: 86400
-};
-
-// Configure multer for file upload
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, 'uploads/');
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
-
+// Configure multer for handling FormData
+const storage = multer.memoryStorage();
 const upload = multer({ 
   storage: storage,
   limits: {
-    fileSize: 100 * 1024 * 1024 // 100MB limit for videos
-  },
-  fileFilter: function (req, file, cb) {
-    const filetypes = /mp4|mov|avi|wmv|flv|mkv|webm/;
-    const mimetype = filetypes.test(file.mimetype);
-    const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
-    
-    if (mimetype && extname) {
-      return cb(null, true);
-    }
-    cb(new Error('Only video files are allowed! Supported formats: mp4, mov, avi, wmv, flv, mkv, webm'));
+    fileSize: 100 * 1024 * 1024 // 100MB limit
   }
-});
-
-// Middleware
-app.use(cors(corsOptions));
-app.use(express.json({ limit: '100mb' })); // Increase JSON payload limit for blob uploads
-
-// Routes
-app.use('/api', blobUploadRouter);
-
-// Basic route
-app.get('/', (req, res) => {
-  res.json({ message: 'Welcome to Asian Paints UGGC API' });
 });
 
 // Function to get video dimensions
@@ -169,21 +124,27 @@ async function processVideo(inputPath, outputPath, audioPath, isMobile) {
   }
 }
 
-// File upload route
-app.post('/upload', upload.single('video'), async (req, res) => {
+// Route to handle video blob upload
+router.post('/upload-blob', upload.single('video'), async (req, res) => {
   try {
     if (!req.file) {
-      return res.status(400).json({ error: 'No video file uploaded' });
+      return res.status(400).json({ error: 'No video file provided' });
     }
 
-    const inputPath = req.file.path;
-    const outputPath = path.join('uploads', `processed-${req.file.filename}`);
+    // Create a unique filename
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const inputPath = path.join('uploads', `input-${uniqueSuffix}.mp4`);
+    const outputPath = path.join('uploads', `processed-${uniqueSuffix}.mp4`);
+
+    // Write the buffer to a file
+    fs.writeFileSync(inputPath, req.file.buffer);
+
     const isMobile = req.body.isMobile === 'true' || req.body.isMobile === true;
     const audioId = req.body.audioId;
     let audioPath = 'assets/audio/jingle-dummy.wav'; // Default audio
 
     console.log('Received request:', {
-      filename: req.file.filename,
+      filename: `input-${uniqueSuffix}.mp4`,
       isMobile,
       audioId
     });
@@ -222,18 +183,4 @@ app.post('/upload', upload.single('video'), async (req, res) => {
   }
 });
 
-// Error handling middleware
-app.use((err, req, res, next) => {
-  if (err instanceof multer.MulterError) {
-    if (err.code === 'LIMIT_FILE_SIZE') {
-      return res.status(400).json({ error: 'Video file size too large. Maximum size is 100MB' });
-    }
-    return res.status(400).json({ error: err.message });
-  }
-  res.status(500).json({ error: err.message });
-});
-
-// Start server
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-}); 
+module.exports = router; 
