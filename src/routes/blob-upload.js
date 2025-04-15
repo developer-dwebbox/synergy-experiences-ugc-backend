@@ -74,10 +74,11 @@ async function processVideo(inputPath, outputPath, isMobile) {
     
     return new Promise((resolve, reject) => {
       ffmpeg(inputPath)
+        .input(framePath)
         .inputOptions([
+          null,
           '-loop 1' // Loop the frame image indefinitely
         ])
-        .input(framePath)
         .complexFilter([
           {
             filter: 'scale',
@@ -101,7 +102,7 @@ async function processVideo(inputPath, outputPath, isMobile) {
         ])
         .outputOptions([
           '-map [framed_video]',
-          '-map 0:a?',
+          '-map 0:a',
           '-pix_fmt yuv420p'
         ])
         .videoCodec('libx264')
