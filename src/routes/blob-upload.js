@@ -102,7 +102,6 @@ async function processVideo(inputPath, outputPath, audioPath, isMobile) {
         .outputOptions([
           '-map [framed_video]',
           '-map 2:a',
-          '-shortest',
           '-af', `volume=0.5`,
           '-pix_fmt yuv420p'
         ])
