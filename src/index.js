@@ -125,9 +125,9 @@ async function processVideo(inputPath, outputPath, audioPath, isMobile) {
           {
             filter: 'scale',
             options: {
-              w: newWidth,
-              h: newHeight,
-              force_original_aspect_ratio: 'disable'
+              w: width,
+              h: height,
+              force_original_aspect_ratio: 'enable'
             },
             inputs: '1:v',
             outputs: 'scaled_frame'
