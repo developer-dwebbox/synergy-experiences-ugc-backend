@@ -76,7 +76,7 @@ async function processVideo(inputPath, outputPath, isMobile) {
       ffmpeg(inputPath)
         .input(framePath)
         .inputOptions([
-          null,
+          '-framerate 30',
           '-loop 1' // Loop the frame image indefinitely
         ])
         .complexFilter([
