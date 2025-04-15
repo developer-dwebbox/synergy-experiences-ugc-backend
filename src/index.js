@@ -157,7 +157,7 @@ async function processVideo(inputPath, outputPath, audioPath, isDesktop) {
         .outputOptions([
           '-map [framed_video]',
           '-map 2:a',
-          '-shortest',
+          // '-shortest',
           '-af', `volume=0.5`,
           '-pix_fmt yuv420p',
           '-preset slow',
