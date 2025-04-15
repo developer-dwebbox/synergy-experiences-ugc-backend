@@ -57,7 +57,7 @@ app.get('/', (req, res) => {
   res.json({ message: 'Welcome to Asian Paints UGGC API' });
 });
 
-// Function to get video dimensions and rotation
+// Function to get video dimensions
 function getVideoInfo(inputPath) {
   return new Promise((resolve, reject) => {
     ffmpeg.ffprobe(inputPath, (err, metadata) => {
@@ -72,36 +72,20 @@ function getVideoInfo(inputPath) {
         return;
       }
 
-      // Get rotation from metadata
-      const rotation = videoStream.tags && videoStream.tags.rotate ? parseInt(videoStream.tags.rotate) : 0;
-      
-      // Get dimensions
-      let width = videoStream.width;
-      let height = videoStream.height;
-
-      // Swap dimensions if video is rotated 90 or 270 degrees
-      if (rotation === 90 || rotation === 270) {
-        [width, height] = [height, width];
-      }
-
       // Get file size
       const fileSize = metadata.format.size;
       const fileSizeMB = (fileSize / (1024 * 1024)).toFixed(2);
 
       console.log('Input Video Info:', {
-        originalWidth: videoStream.width,
-        originalHeight: videoStream.height,
-        rotation,
-        finalWidth: width,
-        finalHeight: height,
+        width: videoStream.width,
+        height: videoStream.height,
         fileSize: `${fileSizeMB} MB`,
         duration: metadata.format.duration
       });
 
       resolve({
-        width,
-        height,
-        rotation,
+        width: videoStream.width,
+        height: videoStream.height,
         fileSize,
         duration: metadata.format.duration
       });
@@ -146,11 +130,6 @@ async function processVideo(inputPath, outputPath, audioPath, isDesktop) {
       const command = ffmpeg(inputPath)
         .input(framePath)
         .input(audioPath);
-
-      // Add rotation if needed
-      if (videoInfo.rotation) {
-        command.videoFilters(`rotate=${videoInfo.rotation}*PI/180`);
-      }
 
       command
         .complexFilter([
