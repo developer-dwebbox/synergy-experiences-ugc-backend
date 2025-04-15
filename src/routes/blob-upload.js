@@ -103,7 +103,8 @@ async function processVideo(inputPath, outputPath, isMobile) {
         .outputOptions([
           '-map [framed_video]',
           '-map 0:a',
-          '-pix_fmt yuv420p'
+          '-pix_fmt yuv420p',
+          '-t 9'          
         ])
         .videoCodec('libx264')
         .audioCodec('copy')
