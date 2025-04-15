@@ -129,7 +129,7 @@ async function processVideo(inputPath, outputPath, audioPath, isDesktop) {
 
       const command = ffmpeg(inputPath)
         .input(framePath)
-        .inputOptions(['-stream_loop -1']) // Loop the frame image
+        // .inputOptions(['-stream_loop -1']) // Loop the frame image
         .input(audioPath);
 
       command
