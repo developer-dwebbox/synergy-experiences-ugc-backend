@@ -11,6 +11,9 @@ const fs = require('fs');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Import routes
+const blobUploadRouter = require('./routes/blob-upload');
+
 // CORS configuration
 const corsOptions = {
   origin: '*',
@@ -50,7 +53,10 @@ const upload = multer({
 
 // Middleware
 app.use(cors(corsOptions));
-app.use(express.json());
+app.use(express.json({ limit: '100mb' })); // Increase JSON payload limit for blob uploads
+
+// Routes
+app.use('/api', blobUploadRouter);
 
 // Basic route
 app.get('/', (req, res) => {
