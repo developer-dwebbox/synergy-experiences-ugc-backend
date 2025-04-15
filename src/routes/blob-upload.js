@@ -99,7 +99,7 @@ async function processVideo(inputPath, outputPath, isMobile) {
           // }
         ])
         .outputOptions([
-          '-map [framed_video]',
+          // '-map [framed_video]',
           '-map 0:a',
           '-pix_fmt yuv420p'
         ])
