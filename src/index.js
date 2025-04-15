@@ -139,6 +139,10 @@ async function processVideo(inputPath, outputPath, audioPath, isDesktop) {
     console.log('Using frame:', framePath);
     
     return new Promise((resolve, reject) => {
+      let errorOccurred = false;
+      let lastProgress = 0;
+      let progressTimeout;
+
       const command = ffmpeg(inputPath)
         .input(framePath)
         .input(audioPath);
@@ -178,40 +182,95 @@ async function processVideo(inputPath, outputPath, audioPath, isDesktop) {
           '-af', `volume=0.5`,
           '-pix_fmt yuv420p',
           '-preset slow',
-          '-crf 23', // Quality setting (lower is better quality)
-          '-movflags +faststart', // Enable fast start for web playback
-          '-profile:v high', // Use high profile for better compatibility
-          '-level 4.0', // Set H.264 level
-          '-max_muxing_queue_size 1024', // Increase muxing queue size
-          '-vsync 1' // Use constant frame rate
+          '-crf 23',
+          '-movflags +faststart',
+          '-profile:v high',
+          '-level 4.0',
+          '-max_muxing_queue_size 1024',
+          '-vsync 1'
         ])
         .audioCodec('aac')
         .videoCodec('libx264')
         .on('start', (commandLine) => {
           console.log('Started FFmpeg with command:', commandLine);
+          console.log('Input video duration:', duration, 'seconds');
+          
+          // Set a timeout to check for stalled progress
+          progressTimeout = setInterval(() => {
+            if (lastProgress === 0) {
+              console.log('Warning: No progress detected for 30 seconds');
+              console.log('Checking input file:', {
+                exists: fs.existsSync(inputPath),
+                size: fs.statSync(inputPath).size
+              });
+            }
+          }, 30000);
         })
         .on('progress', (progress) => {
-          console.log('Processing:', `${Math.round(progress.percent)}% done`);
+          if (progress.percent !== undefined) {
+            lastProgress = progress.percent;
+            console.log('Processing:', `${Math.round(progress.percent)}% done`, {
+              frames: progress.frames,
+              currentFps: progress.currentFps,
+              targetSize: progress.targetSize,
+              timemark: progress.timemark
+            });
+          }
         })
-        .on('end', () => {
-          // Get output file size
-          const outputFileSize = fs.statSync(outputPath).size;
-          const outputFileSizeMB = (outputFileSize / (1024 * 1024)).toFixed(2);
-          
-          console.log('Output Video Info:', {
-            width: videoInfo.width,
-            height: videoInfo.height,
-            fileSize: `${outputFileSizeMB} MB`,
-            duration: videoInfo.duration,
-            compressionRatio: `${((outputFileSize / videoInfo.fileSize) * 100).toFixed(2)}%`
-          });
-          
-          console.log('Video processing finished');
-          resolve();
+        .on('stderr', (stderrLine) => {
+          console.log('FFmpeg stderr:', stderrLine);
         })
         .on('error', (err) => {
-          console.error('FFmpeg error:', err);
+          errorOccurred = true;
+          clearInterval(progressTimeout);
+          console.error('FFmpeg error details:', {
+            message: err.message,
+            code: err.code,
+            signal: err.signal,
+            killed: err.killed,
+            cmd: err.cmd,
+            stdout: err.stdout,
+            stderr: err.stderr
+          });
           reject(err);
+        })
+        .on('end', () => {
+          clearInterval(progressTimeout);
+          
+          if (errorOccurred) {
+            console.error('Processing ended with errors');
+            return;
+          }
+
+          try {
+            // Verify output file exists and has content
+            if (!fs.existsSync(outputPath)) {
+              throw new Error('Output file was not created');
+            }
+
+            const outputStats = fs.statSync(outputPath);
+            if (outputStats.size === 0) {
+              throw new Error('Output file is empty');
+            }
+
+            // Get output file size
+            const outputFileSize = outputStats.size;
+            const outputFileSizeMB = (outputFileSize / (1024 * 1024)).toFixed(2);
+            
+            console.log('Output Video Info:', {
+              width: videoInfo.width,
+              height: videoInfo.height,
+              fileSize: `${outputFileSizeMB} MB`,
+              duration: videoInfo.duration,
+              compressionRatio: `${((outputFileSize / videoInfo.fileSize) * 100).toFixed(2)}%`
+            });
+            
+            console.log('Video processing finished successfully');
+            resolve();
+          } catch (error) {
+            console.error('Error verifying output file:', error);
+            reject(error);
+          }
         })
         .save(outputPath);
     });
