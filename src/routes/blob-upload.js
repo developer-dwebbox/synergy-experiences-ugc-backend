@@ -125,12 +125,9 @@ async function processVideo(inputPath, outputPath, audioPath, isMobile) {
 }
 
 // Route to handle video blob upload
-router.post('/upload-blob', upload.fields([
-  { name: 'video', maxCount: 1 },
-  { name: 'newVideo', maxCount: 1 }
-]), async (req, res) => {
+router.post('/upload-blob', upload.single('video'), async (req, res) => {
   try {
-    if (!req.files.video && !req.files.newVideo) {
+    if (!req.file) {
       return res.status(400).json({ error: 'No video file provided' });
     }
 
@@ -140,8 +137,7 @@ router.post('/upload-blob', upload.fields([
     const outputPath = path.join('uploads', `processed-${uniqueSuffix}.mp4`);
 
     // Write the buffer to a file
-    const videoFile =  req.files.newVideo?.[0];
-    fs.writeFileSync(inputPath, videoFile.buffer);
+    fs.writeFileSync(inputPath, req.file.buffer);
 
     const isMobile = req.body.isMobile === 'true' || req.body.isMobile === true;
     const audioId = req.body.audioId;
@@ -150,8 +146,7 @@ router.post('/upload-blob', upload.fields([
     console.log('Received request:', {
       filename: `input-${uniqueSuffix}.mp4`,
       isMobile,
-      audioId,
-      fileType: req.files.video && false ? 'video' : 'newVideo'
+      audioId
     });
 
     if (audioId === '1') {
