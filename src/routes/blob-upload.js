@@ -2,12 +2,8 @@ const express = require('express');
 const router = express.Router();
 const path = require('path');
 const fs = require('fs');
-const ffmpeg = require('fluent-ffmpeg');
-const ffmpegPath = require('@ffmpeg-installer/ffmpeg').path;
-const ffprobePath = require('@ffprobe-installer/ffprobe').path;
+const { exec } = require('child_process');
 const multer = require('multer');
-ffmpeg.setFfmpegPath(ffmpegPath);
-ffmpeg.setFfprobePath(ffprobePath);
 
 // Configure multer for handling FormData
 const storage = multer.memoryStorage();
@@ -21,18 +17,14 @@ const upload = multer({
 // Function to get video duration
 function getVideoDuration(inputPath) {
   return new Promise((resolve, reject) => {
-    ffmpeg.ffprobe(inputPath, (err, metadata) => {
-      if (err) {
-        console.error('FFprobe duration error:', err);
-        reject(err);
+    const command = `ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${inputPath}"`;
+    exec(command, (error, stdout, stderr) => {
+      if (error) {
+        console.error('FFprobe error:', error);
+        reject(error);
         return;
       }
-      const videoStream = metadata.streams.find(stream => stream.codec_type === 'video');
-      if (!videoStream) {
-        reject(new Error('No video stream found'));
-        return;
-      }
-      resolve(videoStream.duration);
+      resolve(parseFloat(stdout));
     });
   });
 }
@@ -42,41 +34,21 @@ async function processVideo(inputPath, outputPath, audioPath) {
   try {
     const duration = await getVideoDuration(inputPath);
     console.log('Video duration:', duration);
-    
+
     return new Promise((resolve, reject) => {
-      ffmpeg(inputPath)
-        .input(audioPath)
-        .inputOptions([
-          '-stream_loop -1' // Loop the audio
-        ])
-        .complexFilter([
-          {
-            filter: 'amix',
-            options: {
-              inputs: 2,
-              duration: 'longest'
-            },
-            inputs: ['0:a', '1:a'],
-            outputs: 'mixed_audio'
-          }
-        ])
-        .outputOptions([
-          '-map 0:v',
-          '-map [mixed_audio]',
-          '-c:v copy', // Copy video without re-encoding
-          '-c:a aac',
-          '-b:a 192k',
-          '-t', duration.toString() // Set output duration to match input
-        ])
-        .on('end', () => {
-          console.log('Video processing finished');
-          resolve();
-        })
-        .on('error', (err) => {
-          console.error('FFmpeg error:', err);
-          reject(err);
-        })
-        .save(outputPath);
+      const command = `ffmpeg -i "${inputPath}" -stream_loop -1 -i "${audioPath}" -filter_complex "[0:a][1:a]amix=inputs=2:duration=longest[a]" -map 0:v -map "[a]" -c:v copy -c:a aac -b:a 192k -t ${duration} "${outputPath}"`;
+      
+      console.log('Executing FFmpeg command:', command);
+      
+      exec(command, (error, stdout, stderr) => {
+        if (error) {
+          console.error('FFmpeg error:', error);
+          reject(error);
+          return;
+        }
+        console.log('Video processing finished');
+        resolve();
+      });
     });
   } catch (error) {
     console.error('Process video error:', error);
