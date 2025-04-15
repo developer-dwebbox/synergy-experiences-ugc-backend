@@ -18,32 +18,6 @@ const upload = multer({
   }
 });
 
-// Function to get video dimensions
-function getVideoDimensions(inputPath) {
-  return new Promise((resolve, reject) => {
-    ffmpeg.ffprobe(inputPath, (err, metadata) => {
-      if (err) {
-        console.error('FFprobe error:', err);
-        reject(err);
-        return;
-      }
-      const videoStream = metadata.streams.find(stream => stream.codec_type === 'video');
-      if (!videoStream) {
-        reject(new Error('No video stream found'));
-        return;
-      }
-      console.log('Video dimensions:', {
-        width: videoStream.width,
-        height: videoStream.height
-      });
-      resolve({
-        width: videoStream.width,
-        height: videoStream.height
-      });
-    });
-  });
-}
-
 // Function to get video duration
 function getVideoDuration(inputPath) {
   return new Promise((resolve, reject) => {
@@ -63,55 +37,38 @@ function getVideoDuration(inputPath) {
   });
 }
 
-// Function to process video with frame overlay
-async function processVideo(inputPath, outputPath, isMobile) {
+// Function to process video with background music
+async function processVideo(inputPath, outputPath, audioPath) {
   try {
-    const dimensions = await getVideoDimensions(inputPath);
-    
-    // Select frame based on device type
-    const framePath = isMobile ? 'assets/images/frame-mobile.png' : 'assets/images/frame-desktop.png';
-    console.log('Using frame:', framePath);
+    const duration = await getVideoDuration(inputPath);
+    console.log('Video duration:', duration);
     
     return new Promise((resolve, reject) => {
       ffmpeg(inputPath)
-        .input(framePath)
+        .input(audioPath)
         .inputOptions([
-          '-framerate 30',
-          '-loop 1' // Loop the frame image indefinitely
+          '-stream_loop -1' // Loop the audio
         ])
         .complexFilter([
           {
-            filter: 'scale',
+            filter: 'amix',
             options: {
-              w: dimensions.width,
-              h: dimensions.height,
-              force_original_aspect_ratio: 'disable'
+              inputs: 2,
+              duration: 'longest',
+              dropout_transition: 0
             },
-            inputs: '1:v',
-            outputs: 'scaled_frame'
-          },
-          {
-            filter: 'overlay',
-            options: {
-              x: 0,
-              y: 0,
-              format: 'auto'
-            },
-            inputs: ['0:v', 'scaled_frame'],
-            outputs: 'framed_video'
-            
+            inputs: ['0:a', '1:a'],
+            outputs: 'mixed_audio'
           }
         ])
         .outputOptions([
-          '-map [framed_video]',
-          '-map 0:a',
-          '-pix_fmt yuv420p',
-          '-t', '9',
-          '-r', '30',
-          '-shortest'          
+          '-map 0:v',
+          '-map [mixed_audio]',
+          '-c:v copy', // Copy video without re-encoding
+          '-c:a aac',
+          '-b:a 192k',
+          '-shortest'
         ])
-        .videoCodec('libx264')
-        .audioCodec('copy')
         .on('end', () => {
           console.log('Video processing finished');
           resolve();
@@ -143,15 +100,24 @@ router.post('/upload-blob', upload.single('video'), async (req, res) => {
     // Write the buffer to a file
     fs.writeFileSync(inputPath, req.file.buffer);
 
-    const isMobile = req.body.isMobile === 'true' || req.body.isMobile === true;
+    const audioId = req.body.audioId;
+    let audioPath = 'assets/audio/jingle-dummy.wav'; // Default audio
 
     console.log('Received request:', {
       filename: `input-${uniqueSuffix}.mp4`,
-      isMobile
+      audioId
     });
 
-    // Process the video with frame overlay
-    await processVideo(inputPath, outputPath, isMobile);
+    if (audioId === '1') {
+      audioPath = 'assets/audio/jingle-dummy.wav';
+    } else if (audioId === '2') {
+      audioPath = 'assets/audio/jingle-dummy.wav';
+    } else if (audioId === '3') {
+      audioPath = 'assets/audio/jingle-dummy.wav';
+    }
+
+    // Process the video with background music
+    await processVideo(inputPath, outputPath, audioPath);
 
     // Delete the original uploaded file
     fs.unlinkSync(inputPath);
