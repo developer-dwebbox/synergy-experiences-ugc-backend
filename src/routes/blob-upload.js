@@ -86,17 +86,17 @@ async function processVideo(inputPath, outputPath, isMobile) {
             inputs: '1:v',
             outputs: 'scaled_frame'
           },
-          {
-            filter: 'overlay',
-            options: {
-              x: 0,
-              y: 0,
-              format: 'rgb',
-              shortest: 0 // Don't end when shortest input ends
-            },
-            inputs: ['0:v', 'scaled_frame'],
-            outputs: 'framed_video'
-          }
+          // {
+          //   filter: 'overlay',
+          //   options: {
+          //     x: 0,
+          //     y: 0,
+          //     format: 'rgb',
+          //     shortest: 0 // Don't end when shortest input ends
+          //   },
+          //   inputs: ['0:v', 'scaled_frame'],
+          //   outputs: 'framed_video'
+          // }
         ])
         .outputOptions([
           '-map [framed_video]',
