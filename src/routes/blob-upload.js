@@ -55,7 +55,8 @@ async function processVideo(inputPath, outputPath, audioPath) {
             options: {
               inputs: 2,
               duration: 'longest',
-              dropout_transition: 0
+              dropout_transition: 0,
+              normalize: 0
             },
             inputs: ['0:a', '1:a'],
             outputs: 'mixed_audio'
@@ -67,7 +68,7 @@ async function processVideo(inputPath, outputPath, audioPath) {
           '-c:v copy', // Copy video without re-encoding
           '-c:a aac',
           '-b:a 192k',
-          '-shortest'
+          '-t', duration.toString() // Set output duration to match input
         ])
         .on('end', () => {
           console.log('Video processing finished');
