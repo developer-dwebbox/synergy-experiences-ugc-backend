@@ -261,7 +261,7 @@ async function processVideo(inputPath, outputPath, audioPath, isDesktop) {
 }
 
 // File upload route
-app.post('/upload/blob', upload.single('video'), async (req, res) => {
+app.post('/api/upload-blob', upload.single('video'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No video file uploaded' });
