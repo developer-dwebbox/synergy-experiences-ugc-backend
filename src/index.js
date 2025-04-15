@@ -111,7 +111,12 @@ async function processVideo(inputPath, outputPath, audioPath, isMobile) {
     // Select frame based on device type
     const framePath = isMobile ? 'assets/images/frame-mobile.png' : 'assets/images/frame-desktop.png';
     console.log('Using frame:', framePath);
+    const width = dimensions.width;
+    const height = dimensions.height;
+
+    const newWidth  = width > height ? height : width;
     
+    const newHeight = width > height ? width : height;
     return new Promise((resolve, reject) => {
       ffmpeg(inputPath)
         .input(framePath)
@@ -120,8 +125,8 @@ async function processVideo(inputPath, outputPath, audioPath, isMobile) {
           {
             filter: 'scale',
             options: {
-              w: dimensions.width,
-              h: dimensions.height,
+              w: newWidth,
+              h: newHeight,
               force_original_aspect_ratio: 'disable'
             },
             inputs: '1:v',
