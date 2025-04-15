@@ -63,11 +63,10 @@ function getVideoDuration(inputPath) {
   });
 }
 
-// Function to process video with frame overlay and background music
-async function processVideo(inputPath, outputPath, audioPath, isMobile) {
+// Function to process video with frame overlay
+async function processVideo(inputPath, outputPath, isMobile) {
   try {
     const dimensions = await getVideoDimensions(inputPath);
-    const duration = await getVideoDuration(inputPath);
     
     // Select frame based on device type
     const framePath = isMobile ? 'assets/images/frame-mobile.png' : 'assets/images/frame-desktop.png';
@@ -76,7 +75,6 @@ async function processVideo(inputPath, outputPath, audioPath, isMobile) {
     return new Promise((resolve, reject) => {
       ffmpeg(inputPath)
         .input(framePath)
-        // .input(audioPath) // Commented out audio input
         .complexFilter([
           {
             filter: 'scale',
@@ -101,11 +99,11 @@ async function processVideo(inputPath, outputPath, audioPath, isMobile) {
         ])
         .outputOptions([
           '-map [framed_video]',
-          // '-map 2:a', // Commented out audio mapping
-          // '-af', `volume=0.5`, // Commented out audio filter
+          '-map 0:a', // Preserve original audio
           '-pix_fmt yuv420p'
         ])
         .videoCodec('libx264')
+        .audioCodec('copy') // Copy original audio without re-encoding
         .on('end', () => {
           console.log('Video processing finished');
           resolve();
@@ -122,7 +120,7 @@ async function processVideo(inputPath, outputPath, audioPath, isMobile) {
   }
 }
 
-// Route to handle video blob upload
+// Route to handle video upload
 router.post('/upload-blob', upload.single('video'), async (req, res) => {
   try {
     if (!req.file) {
@@ -132,26 +130,36 @@ router.post('/upload-blob', upload.single('video'), async (req, res) => {
     // Create a unique filename
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
     const inputPath = path.join('uploads', `input-${uniqueSuffix}.mp4`);
+    const outputPath = path.join('uploads', `processed-${uniqueSuffix}.mp4`);
 
     // Write the buffer to a file
     fs.writeFileSync(inputPath, req.file.buffer);
 
+    const isMobile = req.body.isMobile === 'true' || req.body.isMobile === true;
+
     console.log('Received request:', {
-      filename: `input-${uniqueSuffix}.mp4`
+      filename: `input-${uniqueSuffix}.mp4`,
+      isMobile
     });
+
+    // Process the video with frame overlay
+    await processVideo(inputPath, outputPath, isMobile);
+
+    // Delete the original uploaded file
+    fs.unlinkSync(inputPath);
 
     // Set appropriate headers for video file
     res.setHeader('Content-Type', 'video/mp4');
-    res.setHeader('Content-Disposition', `attachment; filename=${path.basename(inputPath)}`);
+    res.setHeader('Content-Disposition', `attachment; filename=${path.basename(outputPath)}`);
 
-    // Send the input video file
-    res.sendFile(path.resolve(inputPath), (err) => {
+    // Send the processed video file
+    res.sendFile(path.resolve(outputPath), (err) => {
       if (err) {
         console.error('Error sending file:', err);
-        res.status(500).json({ error: 'Error sending video' });
+        res.status(500).json({ error: 'Error sending processed video' });
       } else {
-        // Delete the file after sending
-        fs.unlinkSync(inputPath);
+        // Delete the processed file after sending
+        fs.unlinkSync(outputPath);
       }
     });
   } catch (error) {
