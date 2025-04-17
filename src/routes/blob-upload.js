@@ -141,7 +141,7 @@ router.post('/upload-blob', upload.single('video'), async (req, res) => {
 
     const isMobile = req.body.isMobile === 'true' || req.body.isMobile === true;
     const audioId = req.body.audioId;
-    let audioPath = 'assets/audio/jingle-dummy.wav'; // Default audio
+    let audioPath = 'assets/audio/tractor_ace.wav'; // Default audio
 
     console.log('Received request:', {
       filename: `input-${uniqueSuffix}.mp4`,
@@ -150,11 +150,11 @@ router.post('/upload-blob', upload.single('video'), async (req, res) => {
     });
 
     if (audioId === '1') {
-      audioPath = 'assets/audio/jingle-dummy.wav';
+      audioPath = 'assets/audio/tractor_ace.wav';
     } else if (audioId === '2') {
-      audioPath = 'assets/audio/jingle-dummy.wav';
+      audioPath = 'assets/audio/tractor_ace.wav';
     } else if (audioId === '3') {
-      audioPath = 'assets/audio/jingle-dummy.wav';
+      audioPath = 'assets/audio/tractor_ace.wav';
     }
 
     // Process the video
