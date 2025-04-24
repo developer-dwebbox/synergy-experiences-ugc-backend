@@ -127,6 +127,7 @@ async function processVideo(inputPath, outputPath, audioPath, isMobile) {
 // Route to handle video blob upload
 router.post('/upload-blob', upload.single('video'), async (req, res) => {
   try {
+    console.log(req.body)
     if (!req.file) {
       return res.status(400).json({ error: 'No video file provided' });
     }
@@ -150,12 +151,10 @@ router.post('/upload-blob', upload.single('video'), async (req, res) => {
     });
 
     if (audioId === '1') {
-      audioPath = 'assets/audio/tractor_ace.wav';
+      audioPath = 'assets/audio/tractor.mp3';
     } else if (audioId === '2') {
-      audioPath = 'assets/audio/tractor_ace.wav';
-    } else if (audioId === '3') {
-      audioPath = 'assets/audio/tractor_ace.wav';
-    }
+      audioPath = 'assets/audio/ace.mp3';
+    } 
 
     // Process the video
     await processVideo(inputPath, outputPath, audioPath, isMobile);
