@@ -154,7 +154,13 @@ router.post('/upload-blob', upload.single('video'), async (req, res) => {
       audioPath = 'assets/audio/tractor.mp3';
     } else if (audioId === '2') {
       audioPath = 'assets/audio/ace.mp3';
-    } 
+    } else if (audioId === '3'){
+      audioPath = 'assets/audio/tamil.wav';
+    }else if (audioId === '4'){
+      audioPath = 'assets/audio/telugu.wav';
+    }else if (audioId === '5'){
+      audioPath = 'assets/audio/kannada.wav';
+    }
 
     // Process the video
     await processVideo(inputPath, outputPath, audioPath, isMobile);
