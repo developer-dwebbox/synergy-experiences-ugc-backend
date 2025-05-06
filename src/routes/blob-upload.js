@@ -160,6 +160,8 @@ router.post('/upload-blob', upload.single('video'), async (req, res) => {
       audioPath = 'assets/audio/telugu.wav';
     }else if (audioId === '5'){
       audioPath = 'assets/audio/kannada.wav';
+    }else if (audioId ==='6'){
+      audioPath = 'assets/audio/malyalam.wav';
     }
 
     // Process the video
